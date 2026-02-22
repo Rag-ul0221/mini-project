@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPay Scanner System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1a2234;
+    --accent: #00e5a0;
+    --accent2: #0090ff;
+    --text: #e8f0fe;
+    --muted: #6b7a99;
+    --danger: #ff4d6d;
+    --border: rgba(255,255,255,0.07);
+  }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(0,144,255,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(0,229,160,0.06) 0%, transparent 50%);
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  header .logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+
+  header .logo svg { width: 32px; height: 32px; }
+
+  header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.35rem;
+    margin-bottom: 2rem;
+    animation: fadeDown 0.6s 0.1s ease both;
+  }
+
+  .tab {
+    padding: 0.55rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+
+  .tab.active {
+    background: linear-gradient(135deg, rgba(0,229,160,0.15), rgba(0,144,255,0.15));
+    color: var(--accent);
+    border: 1px solid rgba(0,229,160,0.25);
+  }
+
+  .panel {
+    display: none;
+    width: 100%;
+    max-width: 480px;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .panel.active { display: block; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  label {
+    display: block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  input, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.2rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent2);
+  }
+
+  input::placeholder { color: var(--muted); }
+
+  .amount-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.2rem;
+    transition: border-color 0.2s;
+  }
+
+  .amount-row:focus-within { border-color: var(--accent2); }
+
+  .currency-symbol {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    color: var(--accent);
+  }
+
+  .amount-row input {
+    border: none;
+    background: transparent;
+    margin: 0;
+    padding: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 0.9rem;
+    border-radius: 12px;
+    border: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.88rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #000;
+    font-weight: 500;
+  }
+
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,229,160,0.3); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    margin-top: 0.5rem;
+  }
+
+  .btn-outline:hover { border-color: var(--accent2); color: var(--text); }
+
+  #qr-output {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+  }
+
+  #qr-canvas {
+    background: #fff;
+    padding: 16px;
+    border-radius: 16px;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 0 60px rgba(0,229,160,0.15);
+  }
+
+  .qr-info {
+    text-align: center;
+  }
+
+  .qr-info .name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .qr-info .amount-display {
+    font-size: 2rem;
+    font-weight: 500;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.2rem;
+  }
+
+  .qr-info .upi {
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  /* Scanner */
+  #scanner-wrap {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    aspect-ratio: 1;
+    margin-bottom: 1rem;
+  }
+
+  #scanner-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .scan-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .scan-frame {
+    width: 60%;
+    aspect-ratio: 1;
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+    position: relative;
+  }
+
+  .scan-frame::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: scanLine 2s ease-in-out infinite;
+  }
+
+  .scan-corners::before, .scan-corners::after {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    border-color: var(--accent2);
+    border-style: solid;
+  }
+
+  .scan-corner-tl { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+  .scan-corner-tr { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+  .scan-corner-bl { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+  .scan-corner-br { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+
+  .scan-corner {
+    position: absolute;
+    width: 22px; height: 22px;
+    border-color: var(--accent2);
+    border-style: solid;
+  }
+
+  #scan-result {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+    text-align: center;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    word-break: break-all;
+    transition: all 0.3s;
+  }
+
+  #scan-result.success {
+    border-color: rgba(0,229,160,0.4);
+    color: var(--accent);
+    background: rgba(0,229,160,0.08);
+  }
+
+  #scan-result.error {
+    border-color: rgba(255,77,109,0.4);
+    color: var(--danger);
+    background: rgba(255,77,109,0.08);
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    display: inline-block;
+    margin-right: 0.5rem;
+    animation: pulse 1.5s infinite;
+  }
+
+  .status-dot.live { background: var(--accent); }
+
+  /* History */
+  .history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s;
+  }
+
+  .history-item:last-child { border-bottom: none; }
+  .history-item:hover { background: rgba(255,255,255,0.02); }
+
+  .history-name { font-size: 0.88rem; }
+  .history-upi { color: var(--muted); font-size: 0.72rem; }
+  .history-amount { font-size: 1rem; color: var(--accent); }
+  .history-time { color: var(--muted); font-size: 0.7rem; }
+  .history-empty { color: var(--muted); text-align: center; padding: 2rem; font-size: 0.82rem; }
+
+  @keyframes fadeDown { from { opacity:0; transform: translateY(-16px); } to { opacity:1; transform: none; } }
+  @keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: none; } }
+  @keyframes scanLine { 0%,100% { top: 0; opacity: 0.8; } 50% { top: calc(100% - 2px); opacity: 1; } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" rx="14" fill="url(#g1)"/>
+      <path d="M14 24C14 18.477 18.477 14 24 14C26.762 14 29.262 15.12 31.09 16.95L27.657 20.383C26.648 19.418 25.383 18.929 24 18.929C21.165 18.929 18.857 21.237 18.857 24.071C18.857 26.906 21.165 29.214 24 29.214C26.44 29.214 28.5 27.6 29.079 25.286H24V20.929H34C34.143 21.643 34.214 22.314 34.214 23.071C34.214 29.2 29.743 34 24 34C18.477 34 14 29.523 14 24Z" fill="white"/>
+      <defs><linearGradient id="g1" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse"><stop stop-color="#00e5a0"/><stop offset="1" stop-color="#0090ff"/></linearGradient></defs>
+    </svg>
+    <h1>GPay Scanner</h1>
+  </div>
+  <p>UPI Payment QR System</p>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('generate')">Generate QR</button>
+  <button class="tab" onclick="switchTab('scan')">Scan QR</button>
+  <button class="tab" onclick="switchTab('history')">History</button>
+</div>
+
+<!-- Generate Panel -->
+<div class="panel active" id="panel-generate">
+  <div class="card">
+    <label>Merchant / Recipient Name</label>
+    <input type="text" id="gen-name" placeholder="e.g. Rahul Sharma" />
+
+    <label>UPI ID</label>
+    <input type="text" id="gen-upi" placeholder="e.g. rahul@okicici" />
+
+    <label>Amount (₹) — leave blank for open amount</label>
+    <div class="amount-row">
+      <span class="currency-symbol">₹</span>
+      <input type="number" id="gen-amount" placeholder="0.00" min="0" />
+    </div>
+
+    <label>Payment Note</label>
+    <input type="text" id="gen-note" placeholder="e.g. Lunch payment" />
+
+    <button class="btn btn-primary" onclick="generateQR()">Generate QR Code</button>
+  </div>
+
+  <div class="card" id="qr-output" style="display:none;">
+    <div id="qr-canvas"></div>
+    <div class="qr-info">
+      <div class="name" id="display-name">—</div>
+      <div class="amount-display" id="display-amount">—</div>
+      <div class="upi" id="display-upi">—</div>
+    </div>
+    <button class="btn btn-outline" onclick="downloadQR()">⬇ Download QR</button>
+  </div>
+</div>
+
+<!-- Scan Panel -->
+<div class="panel" id="panel-scan">
+  <div class="card" style="padding: 1rem;">
+    <div id="scanner-wrap">
+      <video id="scanner-video" autoplay playsinline muted></video>
+      <div class="scan-overlay">
+        <div class="scan-frame">
+          <div class="scan-corner scan-corner-tl" style="top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:4px 0 0 0;"></div>
+          <div class="scan-corner scan-corner-tr" style="top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 4px 0 0;"></div>
+          <div class="scan-corner scan-corner-bl" style="bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 4px;"></div>
+          <div class="scan-corner scan-corner-br" style="bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 4px 0;"></div>
+        </div>
+      </div>
+    </div>
+    <div id="scan-status" style="text-align:center;font-size:0.75rem;color:var(--muted);margin-bottom:0.75rem;">
+      <span class="status-dot" id="status-dot"></span><span id="status-text">Camera inactive</span>
+    </div>
+    <div id="scan-result">Point camera at a GPay / UPI QR code</div>
+  </div>
+  <button class="btn btn-primary" id="scan-btn" onclick="toggleScanner()">Start Camera</button>
+  <button class="btn btn-outline" onclick="manualInput()">Enter UPI ID Manually</button>
+</div>
+
+<!-- History Panel -->
+<div class="panel" id="panel-history">
+  <div class="card" style="padding: 0;">
+    <div id="history-list"></div>
+  </div>
+  <button class="btn btn-outline" onclick="clearHistory()" style="margin-top:0.5rem;">Clear History</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
+<script>
+let scannerActive = false;
+let videoStream = null;
+let scanInterval = null;
+let history = JSON.parse(localStorage.getItem('gpay_history') || '[]');
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['generate','scan','history'][i] === tab);
+  });
+  document.querySelectorAll('.panel').forEach((p,i) => {
+    p.classList.toggle('active', ['panel-generate','panel-scan','panel-history'][i] === `panel-${tab}`);
+  });
+  if (tab !== 'scan' && scannerActive) stopScanner();
+  if (tab === 'history') renderHistory();
+}
+
+function generateQR() {
+  const name = document.getElementById('gen-name').value.trim();
+  const upi = document.getElementById('gen-upi').value.trim();
+  const amount = document.getElementById('gen-amount').value.trim();
+  const note = document.getElementById('gen-note').value.trim();
+
+  if (!upi) { alert('Please enter a UPI ID'); return; }
+
+  let upiUrl = `upi://pay?pa=${encodeURIComponent(upi)}`;
+  if (name) upiUrl += `&pn=${encodeURIComponent(name)}`;
+  if (amount) upiUrl += `&am=${amount}`;
+  if (note) upiUrl += `&tn=${encodeURIComponent(note)}`;
+  upiUrl += '&cu=INR';
+
+  const container = document.getElementById('qr-canvas');
+  container.innerHTML = '';
+  new QRCode(container, {
+    text: upiUrl,
+    width: 220,
+    height: 220,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  document.getElementById('display-name').textContent = name || 'Recipient';
+  document.getElementById('display-amount').textContent = amount ? `₹${parseFloat(amount).toFixed(2)}` : 'Open Amount';
+  document.getElementById('display-upi').textContent = upi;
+  document.getElementById('qr-output').style.display = 'flex';
+
+  addHistory({ type: 'generated', name: name || 'Unknown', upi, amount: amount || null, note, time: new Date().toISOString() });
+}
+
+function downloadQR() {
+  const canvas = document.querySelector('#qr-canvas canvas');
+  if (!canvas) return;
+  const link = document.createElement('a');
+  link.download = 'gpay-qr.png';
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
+async function toggleScanner() {
+  if (scannerActive) { stopScanner(); return; }
+  try {
+    videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video = document.getElementById('scanner-video');
+    video.srcObject = videoStream;
+    scannerActive = true;
+    document.getElementById('scan-btn').textContent = 'Stop Camera';
+    document.getElementById('status-dot').classList.add('live');
+    document.getElementById('status-text').textContent = 'Scanning...';
+
+    scanInterval = setInterval(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(img.data, img.width, img.height);
+      if (code) handleScan(code.data);
+    }, 300);
+  } catch(e) {
+    alert('Camera access denied or unavailable.');
+  }
+}
+
+function stopScanner() {
+  if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
+  clearInterval(scanInterval);
+  scannerActive = false;
+  document.getElementById('scan-btn').textContent = 'Start Camera';
+  document.getElementById('status-dot').classList.remove('live');
+  document.getElementById('status-text').textContent = 'Camera inactive';
+}
+
+function handleScan(data) {
+  stopScanner();
+  const el = document.getElementById('scan-result');
+  
+  // Try to parse UPI URL
+  if (data.startsWith('upi://pay')) {
+    try {
+      const params = {};
+      data.replace('upi://pay?', '').split('&').forEach(p => {
+        const [k, v] = p.split('=');
+        params[k] = decodeURIComponent(v || '');
+      });
+      const name = params.pn || 'Unknown';
+      const upi = params.pa || '';
+      const amount = params.am || null;
+      const note = params.tn || '';
+      
+      el.className = 'success';
+      el.innerHTML = `<div>
+        <div style="font-size:1rem;color:var(--accent);margin-bottom:0.3rem">${name}</div>
+        <div>${upi}</div>
+        ${amount ? `<div style="font-size:1.4rem;margin-top:0.3rem;">₹${parseFloat(amount).toFixed(2)}</div>` : ''}
+        ${note ? `<div style="color:var(--muted);margin-top:0.2rem;">${note}</div>` : ''}
+        <div style="margin-top:0.8rem;"><a href="${encodeURI(data)}" style="color:var(--accent2);font-size:0.78rem;">Open in GPay ↗</a></div>
+      </div>`;
+      addHistory({ type: 'scanned', name, upi, amount, note, time: new Date().toISOString() });
+    } catch(e) {
+      el.className = 'success';
+      el.textContent = data;
+    }
+  } else {
+    el.className = '';
+    el.textContent = 'Scanned: ' + data;
+  }
+}
+
+function manualInput() {
+  const upi = prompt('Enter UPI ID:');
+  if (upi) handleScan(`upi://pay?pa=${encodeURIComponent(upi)}`);
+}
+
+function addHistory(entry) {
+  history.unshift(entry);
+  if (history.length > 50) history.pop();
+  localStorage.setItem('gpay_history', JSON.stringify(history));
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if (!history.length) {
+    list.innerHTML = '<div class="history-empty">No transactions yet</div>';
+    return;
+  }
+  list.innerHTML = history.map(h => `
+    <div class="history-item">
+      <div>
+        <div class="history-name">${h.name} <span style="color:var(--muted);font-size:0.7rem;">[${h.type}]</span></div>
+        <div class="history-upi">${h.upi}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="history-amount">${h.amount ? '₹' + parseFloat(h.amount).toFixed(2) : '—'}</div>
+        <div class="history-time">${new Date(h.time).toLocaleTimeString()}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function clearHistory() {
+  if (confirm('Clear all history?')) {
+    history = [];
+    localStorage.setItem('gpay_history', '[]');
+    renderHistory();
+  }
+}
+</script>
+</body>
+</html>
